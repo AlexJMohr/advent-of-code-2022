@@ -1,23 +1,21 @@
 use std::collections::HashSet;
 
 pub fn part1(input: &str) -> usize {
-    for (i, window) in input.as_bytes().windows(4).enumerate() {
-        let set = window.iter().collect::<HashSet<&u8>>();
-        if set.len() == 4 {
-            return i + 4;
-        }
-    }
-    0
+    input
+        .as_bytes()
+        .windows(4)
+        .position(|window| window.iter().collect::<HashSet<&u8>>().len() == 4)
+        .unwrap()
+        + 4
 }
 
 pub fn part2(input: &str) -> usize {
-    for (i, window) in input.as_bytes().windows(14).enumerate() {
-        let set = window.iter().collect::<HashSet<&u8>>();
-        if set.len() == 14 {
-            return i + 14;
-        }
-    }
-    0
+    input
+        .as_bytes()
+        .windows(14)
+        .position(|window| window.iter().collect::<HashSet<&u8>>().len() == 14)
+        .unwrap()
+        + 14
 }
 
 #[cfg(test)]
