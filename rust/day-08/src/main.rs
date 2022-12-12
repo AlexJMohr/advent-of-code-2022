@@ -12,7 +12,7 @@ fn parse_grid(input: &str) -> Vec<Vec<u32>> {
                 .map(|c| c.to_digit(10).unwrap())
                 .collect::<Vec<u32>>()
         })
-        .collect::<Vec<Vec<u32>>>()
+        .collect()
 }
 
 fn part1(input: &str) -> u32 {
