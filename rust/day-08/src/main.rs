@@ -143,7 +143,7 @@ fn part2(input: &str) -> u32 {
             }
         }
     }
-    best as u32
+    best
 }
 
 #[cfg(test)]
