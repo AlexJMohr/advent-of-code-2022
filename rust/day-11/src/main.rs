@@ -3,36 +3,38 @@ use std::collections::VecDeque;
 use nom::{
     branch::alt,
     bytes::complete::{tag, take_while1},
-    character::complete::line_ending,
+    character::complete::{line_ending, space0},
     multi::separated_list1,
+    sequence::pair,
     IResult,
 };
 
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
     println!("Part 1: {}", part1(&input));
+    println!("Part 2: {}", part2(&input));
 }
 
 #[derive(Debug, PartialEq, Clone)]
 enum Operation {
-    Add(u32),
-    Mul(u32),
+    Add(u64),
+    Mul(u64),
     Square,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 struct Monkey {
-    items: VecDeque<u32>,
+    items: VecDeque<u64>,
     operation: Operation,
-    divisor: u32,
+    divisor: u64,
     true_monkey_idx: usize,
     false_monkey_idx: usize,
-    inspect_count: u32,
+    inspect_count: u64,
 }
 
 fn monkey(input: &str) -> IResult<&str, Monkey> {
     let (input, _) = tag("Monkey ")(input)?;
-    let (input, _) = nom::character::complete::u32(input)?;
+    let (input, _) = nom::character::complete::u64(input)?;
     let (input, _) = tag(":")(input)?;
     let (input, _) = line_ending(input)?;
     let (input, items) = starting_items(input)?;
@@ -57,14 +59,14 @@ fn monkey(input: &str) -> IResult<&str, Monkey> {
     ))
 }
 
-fn starting_items(input: &str) -> IResult<&str, VecDeque<u32>> {
-    let (input, _) = tag("  Starting items: ")(input)?;
-    let (input, items) = separated_list1(tag(", "), nom::character::complete::u32)(input)?;
+fn starting_items(input: &str) -> IResult<&str, VecDeque<u64>> {
+    let (input, _) = pair(space0, tag("Starting items: "))(input)?;
+    let (input, items) = separated_list1(tag(", "), nom::character::complete::u64)(input)?;
     Ok((input, VecDeque::from(items)))
 }
 
 fn operation(input: &str) -> IResult<&str, Operation> {
-    let (input, _) = tag("  Operation: new = old ")(input)?;
+    let (input, _) = pair(space0, tag("Operation: new = old "))(input)?;
     let (input, op) = alt((tag("+"), tag("*")))(input)?;
     let (input, _) = tag(" ")(input)?;
     let (input, val) = alt((take_while1(|c: char| c.is_digit(10)), tag("old")))(input)?;
@@ -76,29 +78,22 @@ fn operation(input: &str) -> IResult<&str, Operation> {
         _ => unreachable!(),
     };
 
-    // let (input, val) = nom::character::complete::u32(input)?;
-    // let op = match op {
-    //     "*" => Operation::Mul(val),
-    //     "+" => Operation::Add(val),
-    //     "old" => Operation::Square,
-    //     _ => unreachable!(),
-    // };
     Ok((input, op))
 }
 
-fn divisor(input: &str) -> IResult<&str, u32> {
-    let (input, _) = tag("  Test: divisible by ")(input)?;
-    nom::character::complete::u32(input)
+fn divisor(input: &str) -> IResult<&str, u64> {
+    let (input, _) = pair(space0, tag("Test: divisible by "))(input)?;
+    nom::character::complete::u64(input)
 }
 
 fn true_monkey_idx(input: &str) -> IResult<&str, usize> {
-    let (input, _) = tag("    If true: throw to monkey ")(input)?;
+    let (input, _) = pair(space0, tag("If true: throw to monkey "))(input)?;
     let (input, idx) = nom::character::complete::u64(input)?;
     Ok((input, idx as usize))
 }
 
 fn false_monkey_idx(input: &str) -> IResult<&str, usize> {
-    let (input, _) = tag("    If false: throw to monkey ")(input)?;
+    let (input, _) = pair(space0, tag("If false: throw to monkey "))(input)?;
     let (input, idx) = nom::character::complete::u64(input)?;
     Ok((input, idx as usize))
 }
@@ -109,72 +104,72 @@ fn monkeys(input: &str) -> IResult<&str, Vec<Monkey>> {
     Ok((input, monkeys))
 }
 
-fn part1(input: &str) -> u32 {
+fn part1(input: &str) -> u64 {
     let (_, mut monkeys) = monkeys(input).unwrap();
-    println!("{:#?}", monkeys);
-    for round in 0..2 {
-        // FIXME: find a better way than cloning
-        for (i, monkey) in monkeys.clone().iter_mut().enumerate() {
-            println!("Monkey {}:", i);
-            // FIXME: the monkey should consider the items it receives this round
-            while let Some(item) = monkey.items.pop_front() {
-                println!("  Monkey inspects item with a worry level of {}.", item);
+    for _ in 0..20 {
+        for i in 0..monkeys.len() {
+            while let Some(item) = monkeys[i].items.pop_front() {
                 monkeys[i].inspect_count += 1;
 
-                let item = match monkey.operation {
-                    Operation::Add(val) => {
-                        let new_val = item + val;
-                        println!("    Worry level increases by {} to {}", val, new_val);
-                        new_val
-                    }
-                    Operation::Mul(val) => {
-                        let new_val = item * val;
-                        println!("    Worry level is multiplied by {} to {}.", val, new_val);
-                        new_val
-                    }
-                    Operation::Square => {
-                        let new_val = item * item;
-                        println!("    Worry level is multiplied by {} to {}", item, item);
-                        new_val
-                    }
+                let item = match monkeys[i].operation {
+                    Operation::Add(val) => item + val,
+                    Operation::Mul(val) => item * val,
+                    Operation::Square => item * item,
                 };
 
                 let item = item / 3;
-                println!(
-                    "    Monkey gets bored with item. Worry level is divided by 3 to {}.",
-                    item
-                );
 
-                let idx = if item % monkey.divisor == 0 {
-                    println!(
-                        "    Current worry level is divisible by {}.",
-                        monkey.divisor
-                    );
-                    monkey.true_monkey_idx
+                let idx = if item % monkeys[i].divisor == 0 {
+                    monkeys[i].true_monkey_idx
                 } else {
-                    println!(
-                        "    Current worry level is not divisible by {}.",
-                        monkey.divisor
-                    );
-                    monkey.false_monkey_idx
+                    monkeys[i].false_monkey_idx
                 };
 
                 monkeys[idx].items.push_back(item);
-                println!(
-                    "    Item with worry level {} is thrown to monkey {}.",
-                    item, idx
-                );
             }
-            println!("  Inspected {} items in total", monkeys[i].inspect_count);
         }
-        println!("******** ROUND {} END **********", round);
     }
     let mut counts = monkeys
         .iter()
         .map(|monkey| monkey.inspect_count)
-        .collect::<Vec<u32>>();
+        .collect::<Vec<u64>>();
     counts.sort();
-    println!("{:?}", counts);
+    counts[counts.len() - 1] * counts[counts.len() - 2]
+}
+
+fn part2(input: &str) -> u64 {
+    let (_, mut monkeys) = monkeys(input).unwrap();
+
+    let prod = monkeys.iter().fold(1, |p, m| p * m.divisor);
+
+    for _ in 0..10000 {
+        for i in 0..monkeys.len() {
+            while let Some(item) = monkeys[i].items.pop_front() {
+                monkeys[i].inspect_count += 1;
+
+                let item = match monkeys[i].operation {
+                    Operation::Add(val) => item + val,
+                    Operation::Mul(val) => item * val,
+                    Operation::Square => item * item,
+                };
+
+                let item = item % prod;
+
+                let idx = if item % monkeys[i].divisor == 0 {
+                    monkeys[i].true_monkey_idx
+                } else {
+                    monkeys[i].false_monkey_idx
+                };
+
+                monkeys[idx].items.push_back(item);
+            }
+        }
+    }
+    let mut counts = monkeys
+        .iter()
+        .map(|monkey| monkey.inspect_count)
+        .collect::<Vec<u64>>();
+    counts.sort();
     counts[counts.len() - 1] * counts[counts.len() - 2]
 }
 
@@ -369,5 +364,10 @@ Monkey 1:
     #[test]
     fn part1_works() {
         assert_eq!(10605, part1(INPUT));
+    }
+
+    #[test]
+    fn part2_works() {
+        assert_eq!(2713310158, part2(INPUT));
     }
 }
