@@ -2,7 +2,7 @@ use std::collections::{BTreeSet, VecDeque};
 
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
-    println!("Part 1: {}", part1(&input));
+    println!("Part 1: {}", part1(&input).unwrap());
 }
 
 fn parse_heightmap(input: &str) -> (Vec<Vec<i32>>, (usize, usize), (usize, usize)) {
@@ -32,9 +32,8 @@ fn parse_heightmap(input: &str) -> (Vec<Vec<i32>>, (usize, usize), (usize, usize
     (heightmap, start.unwrap(), end.unwrap())
 }
 
-type Pos = (usize, usize);
-
-fn part1_impl(heightmap: &Vec<Vec<i32>>, start: Pos, end: Pos) -> Option<usize> {
+fn part1(input: &str) -> Option<usize> {
+    let (heightmap, start, end) = parse_heightmap(input);
     let height = heightmap.len();
     let width = heightmap[0].len();
     let mut queue = VecDeque::<_>::from([vec![start]]);
@@ -83,11 +82,6 @@ fn part1_impl(heightmap: &Vec<Vec<i32>>, start: Pos, end: Pos) -> Option<usize> 
     return None;
 }
 
-fn part1(input: &str) -> usize {
-    let (heightmap, start, end) = parse_heightmap(input);
-    part1_impl(&heightmap, start, end).unwrap()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -114,6 +108,6 @@ abdefghi";
 
     #[test]
     fn part1_works() {
-        assert_eq!(31, part1(INPUT));
+        assert_eq!(Some(31), part1(INPUT));
     }
 }
