@@ -2,7 +2,8 @@ use std::collections::{BTreeSet, VecDeque};
 
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
-    println!("Part 1: {}", part1(&input).unwrap());
+    println!("Part 1: {}", part1(&input));
+    println!("Part 2: {}", part2(&input));
 }
 
 fn parse_heightmap(input: &str) -> (Vec<Vec<i32>>, (usize, usize), (usize, usize)) {
@@ -32,8 +33,9 @@ fn parse_heightmap(input: &str) -> (Vec<Vec<i32>>, (usize, usize), (usize, usize
     (heightmap, start.unwrap(), end.unwrap())
 }
 
-fn part1(input: &str) -> Option<usize> {
-    let (heightmap, start, end) = parse_heightmap(input);
+type Pos = (usize, usize);
+
+fn bfs(heightmap: &Vec<Vec<i32>>, start: Pos, end: Pos) -> Option<usize> {
     let height = heightmap.len();
     let width = heightmap[0].len();
     let mut queue = VecDeque::<_>::from([vec![start]]);
@@ -82,6 +84,29 @@ fn part1(input: &str) -> Option<usize> {
     return None;
 }
 
+fn part1(input: &str) -> usize {
+    let (heightmap, start, end) = parse_heightmap(input);
+    bfs(&heightmap, start, end).unwrap()
+}
+
+fn part2(input: &str) -> usize {
+    let (heightmap, _, end) = parse_heightmap(input);
+    let mut steps = vec![];
+
+    for (y, row) in heightmap.iter().enumerate() {
+        for (x, h) in row.iter().enumerate() {
+            if *h == 0 {
+                let start = (x, y);
+                if let Some(step_count) = bfs(&heightmap, start, end) {
+                    steps.push(step_count);
+                }
+            }
+        }
+    }
+    steps.sort();
+    steps[0]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -108,6 +133,11 @@ abdefghi";
 
     #[test]
     fn part1_works() {
-        assert_eq!(Some(31), part1(INPUT));
+        assert_eq!(31, part1(INPUT));
+    }
+
+    #[test]
+    fn part2_works() {
+        assert_eq!(29, part2(INPUT));
     }
 }
